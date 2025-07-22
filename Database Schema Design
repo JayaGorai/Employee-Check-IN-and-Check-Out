@@ -1,0 +1,8 @@
+CREATE TABLE EmployeeAttendance (
+RecordID INT IDENTITY(1,1) PRIMARY KEY,
+EmpID INT NOT NULL,
+Name VARCHAR(50) NOT NULL,
+CheckInOutTime DATETIME NOT NULL,
+Attendance VARCHAR(3) NOT NULL CHECK (Attendance IN ('IN', 'OUT')),
+RecordDate AS CAST(CheckInOutTime AS DATE) PERSISTED
+);
