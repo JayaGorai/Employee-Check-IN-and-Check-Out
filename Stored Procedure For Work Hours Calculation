@@ -1,0 +1,49 @@
+CREATE PROCEDURE sp_CalculateDailyWorkHours
+@TargetDate DATE = NULL
+AS
+BEGIN
+SET NOCOUNT ON;
+-- If no date specified, use current date
+IF @TargetDate IS NULL
+SET @TargetDate = CAST(GETDATE() AS DATE);
+-- Clear existing records for the target date
+DELETE FROM DailyWorkHours WHERE WorkDate = @TargetDate;
+-- Calculate work hours for each employee
+WITH EmployeeTimeBlocks AS (
+SELECT
+EmpID,
+Name,
+CheckInOutTime,
+Attendance,
+ROW_NUMBER() OVER (PARTITION BY EmpID ORDER BY CheckInOutTime) as RowNum
+FROM EmployeeAttendance
+WHERE CAST(CheckInOutTime AS DATE) = @TargetDate
+),
+TimeIntervals AS (
+SELECT
+e1.EmpID,
+e1.Name,
+e1.CheckInOutTime as StartTime,
+e1.Attendance as StartStatus,
+e2.CheckInOutTime as EndTime,
+e2.Attendance as EndStatus,
+CASE
+WHEN e1.Attendance = 'IN' AND e2.Attendance = 'OUT'
+THEN DATEDIFF(MINUTE, e1.CheckInOutTime, e2.CheckInOutTime)
+ELSE 0
+END as WorkMinutes
+FROM EmployeeTimeBlocks e1
+LEFT JOIN EmployeeTimeBlocks e2 ON e1.EmpID = e2.EmpID AND e2.RowNum = e1.RowNum
+)
+INSERT INTO DailyWorkHours (EmpID, Name, WorkDate, FirstCheckInTime, LastCheckOutTime
+SELECT
+EmpID,
+Name,
+@TargetDate as WorkDate,
+MIN(CASE WHEN StartStatus = 'IN' THEN StartTime END) as FirstCheckInTime,
+MAX(CASE WHEN EndStatus = 'OUT' THEN EndTime END) as LastCheckOutTime,
+SUM(CASE WHEN StartStatus = 'OUT' THEN 1 ELSE 0 END) as TotalOutCount,
+FORMAT(SUM(WorkMinutes) / 60, '00') + ':' + FORMAT(SUM(WorkMinutes) % 60, '00') a
+FROM TimeIntervals
+GROUP BY EmpID, Name;
+END;
