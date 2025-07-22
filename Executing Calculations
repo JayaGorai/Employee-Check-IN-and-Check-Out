@@ -1,0 +1,10 @@
+Calculate work hours for a specific date
+EXEC sp_CalculateDailyWorkHours @TargetDate = '2024-01-03';
+
+
+Calculate work hours for current date
+EXEC sp_CalculateDailyWorkHours;
+
+
+View results
+SELECT * FROM vw_DailyWorkHoursSummary ORDER BY EmpID;
