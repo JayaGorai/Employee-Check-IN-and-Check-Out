@@ -1,0 +1,11 @@
+CREATE VIEW vw_DailyWorkHoursSummary AS
+SELECT
+EmpID,
+Name,
+WorkDate,
+FORMAT(FirstCheckInTime, 'dd-MM-yyyy HH:mm') as FirstCheckInTime,
+FORMAT(LastCheckOutTime, 'dd-MM-yyyy HH:mm') as LastCheckOutTime,
+TotalOutCount,
+TotalWorkHours,
+CreatedDate
+FROM DailyWorkHours;
